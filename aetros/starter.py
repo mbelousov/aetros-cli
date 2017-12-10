@@ -7,6 +7,7 @@ import os
 import subprocess
 import sys
 import six
+import signal
 
 from aetros.logger import GeneralLogger
 from aetros.utils import unpack_full_job_id, read_home_config, flatten_parameters, get_ssh_key_for_host
@@ -287,7 +288,9 @@ def start_command(logger, job_backend, env=None, volumes=None, gpu_devices=None)
                 stderr=subprocess.PIPE, stdout=subprocess.PIPE).wait()
             subprocess.Popen([home_config['docker'], 'wait', job_backend.job_id], stdout=subprocess.PIPE).wait()
         elif not exited and p and p.poll() is None:
-            p.kill() # sends SIGINT
+            logger.warn("kill %d (gr: %d)" % (p.pid, os.getpgid(p.pid)))
+            # p.kill()  # sends SIGINT
+            os.killpg(os.getpgid(p.pid), signal.SIGINT)
             p.wait()
 
         if exited:
